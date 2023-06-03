@@ -38,6 +38,7 @@ class Fm:
         for i in range(len(self.listaFreqs)-1,-1,-1):
             samples = self.listaFreqs[i][1] * np.sin(2*np.pi*self.listaFreqs[i][0]*currChunk/self.bitRate + samples)
         
+        self.currPos += self.chunkSize
         return samples * self.vol
     
 class Partitura: 
@@ -55,7 +56,7 @@ class Partitura:
         ini = 0
         for nota in listaNotas:
             self.listaNotasConMomentos.append([nota[0], ini, ini + nota[1] * self.bitsPerBeat]) #nota[0] -> freq, nota[1] -> duracion en negras
-            ini += nota[1]
+            ini += nota[1] * self.bitsPerBeat
 
 
     def getNextChunk(self):
@@ -87,8 +88,8 @@ def main():
     kb = kbhit.KBHit()
     c = ' '
 
-    myFm = Fm(SRATE, CHUNK, listaFreqs=[[220,0.8]], vol = 0.1)
-    myPartitura = Partitura(SRATE, CHUNK, [[220,1],[440,2],[220,1],[330,2]], 60)
+    myFm = Fm(SRATE, CHUNK, vol = 0.2)
+    myPartitura = Partitura(SRATE, CHUNK, [[220,1], [440, 2], [220,1], [330, 2]], 60)
 
 
     # [(fc,vol),(fm1,beta1),(fm2,beta2),...]
