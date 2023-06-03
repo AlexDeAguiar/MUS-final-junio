@@ -63,7 +63,7 @@ class Partitura:
         currNotas = []
         for nota in self.listaNotasConMomentos:
             if nota[1] <= self.currPos and nota[2] > self.currPos: #Para cada nota que se tenga que tocar en este chunk
-                currNotas.append([nota[0], 1]) #Añade su frecuencia
+                currNotas.append([nota[0], 0.5]) #Añade su frecuencia
 
         self.currPos += self.chunkSize
         return currNotas
@@ -88,8 +88,8 @@ def main():
     kb = kbhit.KBHit()
     c = ' '
 
-    myFm = Fm(SRATE, CHUNK, vol = 0.2)
-    myPartitura = Partitura(SRATE, CHUNK, [[220,1], [440, 2], [220,1], [330, 2]], 60)
+    myFm = Fm(SRATE, CHUNK, vol = 0.05)
+    myPartitura = Partitura(SRATE, CHUNK, [[261.626,1], [293.665, 2], [329.628,1], [349.228, 2]], 60)
 
 
     # [(fc,vol),(fm1,beta1),(fm2,beta2),...]
