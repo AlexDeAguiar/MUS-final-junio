@@ -5,17 +5,21 @@ print("hola")
 
 
 class OscWaveTable:
-    def __init__(self, bitRate, chunckSize):
+    def __init__(self, bitRate, chunkSize):
         self.bitRate = bitRate
-        self.chunckSize = chunckSize
-        self.freq = 440
+        self.chunkSize = chunkSize
+        
 
         # un ciclo completo de seno en [0,2pi)
-        t = np.linspace(0, 1, num=size)
+        t = np.linspace(0, 1, num=chunkSize)
         self.waveTable = np.sin(2 * np.pi * t)
-        
+
         # arranca en 0
         self.fase = 0
+
+        #Frecuencia por defecto
+        self.freq = 440
+
         # paso en la wavetable en funcion de frec y RATE
         self.step = self.size/(SRATE/self.frec)
 
