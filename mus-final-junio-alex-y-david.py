@@ -3,7 +3,7 @@ import sounddevice as sd   # modulo de conexión con portAudio
 import soundfile as sf     # para lectura/escritura de wavs
 import kbhit
 
-class fm:
+class Fm:
     def __init__(self, bitRate, chunkSize, listaFreqs=[], vol=1):
         self.bitRate = bitRate # ~= SRATE
         self.chunkSize = chunkSize
@@ -40,6 +40,42 @@ class fm:
         
         return samples * self.vol
     
+class Partitura: 
+    def __init__(self, bitRate, chunkSize, listaNotas, bpm): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
+        self.bitRate = bitRate # ~= SRATE
+        self.chunkSize = chunkSize
+
+        
+        self.currPos = 0
+        self.bpm = bpm
+        self.bitsPerBeat = self.bitRate/(self.bpm/60)
+
+        self.listaNotasConMomentos = []
+
+        ini = 0
+        for nota in listaNotas:
+            self.listaNotasConMomentos.append([nota[0], ini, ini + nota[1] * self.bitsPerBeat]) #nota[0] -> freq, nota[1] -> duracion en negras
+            ini += nota[1]
+
+
+    def getNextChunk(self):
+        currNotas = []
+        for nota in self.listaNotasConMomentos:
+            if nota[1] <= self.currPos and nota[2] > self.currPos: #Para cada nota que se tenga que tocar en este chunk
+                currNotas.append([nota[0], 1]) #Añade su frecuencia
+
+        self.currPos += self.chunkSize
+        return currNotas
+            
+
+        
+
+        
+    
+
+
+
+##[[220, 1][440, 2]], 100
 
 
 def main():
@@ -51,7 +87,8 @@ def main():
     kb = kbhit.KBHit()
     c = ' '
 
-    myFm = fm(SRATE, CHUNK, listaFreqs=[[220,0.8]], vol = 0.1)
+    myFm = Fm(SRATE, CHUNK, listaFreqs=[[220,0.8]], vol = 0.1)
+    myPartitura = Partitura(SRATE, CHUNK, [[220,1],[440,2],[220,1],[330,2]], 60)
 
 
     # [(fc,vol),(fm1,beta1),(fm2,beta2),...]
@@ -61,6 +98,7 @@ def main():
     #frecs = [[fc,0.8],[fc+fm,0.5],[fc+2*fm,0.3],[fc+3*fm,0.2]]
 
     while True:
+        myFm.setListaFreqs(myPartitura.getNextChunk())
         samples = myFm.getNextChunk()
         stream.write(np.float32(samples)) 
 
