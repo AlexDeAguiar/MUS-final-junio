@@ -2,6 +2,7 @@ import numpy as np
 import sounddevice as sd   # modulo de conexión con portAudio
 import soundfile as sf     # para lectura/escritura de wavs
 import kbhit
+import re
 
 class Fm:
     def __init__(self, bitRate, chunkSize, listaFreqs=[], vol=1):
@@ -71,6 +72,19 @@ class Partitura:
 
 class AbcInput:
     def __init__(self):
+        #+-2 menos en saltos de SI-DO y MI-FA
+        self.notasExpSol = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2, "c": 3, "d": 5, "e": 7, "f":8 , "g":10 , "a": 12, "b": 14} #En clave de sol: el LA es 440
+        self.notasExpFa = {"E": -29, "F": -28,"G": -26, "A": -24, "B": -22, "c": -21, "d": -19, "e": -17, "f": -16, "g": -14, "a": -12, "b": -10, "c'": -9} 
+        self.notasExpDo = {"D": -19, "E": -17, "F": -16, "G": -14, "A": -12, "B": -10,"c": -9, "d": -7, "e": -5, "f": -4, "g": -2, "a": 0, "b": 2}
+        #Clave de Sol:
+        # DO RE MI FA SOL LA(440) SI DO RE MI FA SOL LA(880)
+        # C  D  E  F  G   A       B  c  d  e  f  g   a
+        #Clave de Fa:
+        # MI FA SOL LA(110) SI DO RE MI FA SOL LA(220) SI DO    
+        # E  F  G   A       B  c  d  e  f  g   a       b  c'
+        #Clave de Do:
+        # RE MI FA SOL LA(220) SI DO RE MI FA SOL LA(440) SI
+        # D  E  F  G   A       B  c  d  e  f  g   a       b
         return
 
     def setIndiceMelodia(self, X): #1, 2, 3...
@@ -80,10 +94,16 @@ class AbcInput:
         self.titulo = T
 
     def setCompas(self, M): #2/4, 3/4, 4/4, 6/8, ... 
-        self.compas = M
+        auxCompas = M.split("/")
+        self.compasStr = M
+        self.compasParteIzq = getNum(auxCompas[0])
+        self.compasParteDer = getNum(auxCompas[1])
 
     def setDuracionNotaPorDefecto(self, L): #si no se indica lo contrario, esta sera la duracion de cualquier nota que se indique (ejemplo: 1/8, 1/4, ...)
-        self.duracionNotaPorDefecto = L
+        auxDuracionDefault = L.split("/")
+        self.duracionDefaultStr = L
+        self.duracionDefaultParteIzq = getNum(auxDuracionDefault[0])
+        self.duracionDefaultDer = getNum(auxDuracionDefault[1])
 
     def setTipoMelodia(self, R):
         self.tipoMelodia = R
@@ -96,6 +116,35 @@ class AbcInput:
 
     def getNotas(self):
         return self.notas
+    
+    def getDuracionDefaultParteIzq(self):
+        return self.duracionDefaultParteIzq
+    
+    def getFreqParaNota(self, notaStr):
+        if(self.key == "G"):
+            if notaStr in self.notasExpSol:
+                i = self.notasExpSol[notaStr]
+                return 440 * (2 ** (i / 12)) #440 * 2^(i/12)
+            else:
+                print("error, nota no reconocida en esta escala")
+                return None
+        elif(self.key == "F"):
+            if notaStr in self.notasExpFa:
+                i = self.notasExpFa[notaStr]
+                return 440 * (2 ** (i / 12)) #440 * 2^(i/12)
+            else:
+                print("error, nota no reconocida en esta escala")
+                return None
+        elif(self.key == "C"):
+            if notaStr in self.notasExpDo:
+                i = self.notasExpDo[notaStr]
+                return 440 * (2 ** (i / 12)) #440 * 2^(i/12)
+            else:
+                print("error, nota no reconocida en esta escala")
+                return None
+        else:
+            print("error, escala no reconocida")
+            return None
 
 def isNum(c):
     return c.isnumeric()
@@ -109,10 +158,10 @@ def leeArchivo(pathArchivo):
     lineas = archivoStr.splitlines()
 
     abc = AbcInput()
-    #            Do       RE       MI       FA       SOL      LA      SI      do'     re'     mi'     fa'     sol'     la'      si'
-    notasExpI = {"C": -9, "D": -7, "E": -5, "F": -4, "G": -2, "A": 0, "B": 2, "c": 3, "d": 5, "e": 7, "f":8 , "g":10 , "a": 12, "b": 14}
 
     notas = []
+    comienzoRep = 0
+    idxAnteriorCompas = 0
     for linea in lineas:      
         if (len(linea) >= 3 and linea[1] == ":"): #Headers
             aux = linea.split(":")
@@ -133,36 +182,87 @@ def leeArchivo(pathArchivo):
                 abc.setKey(parteDer)
             else:
                 print("---ERROR---"),
-                print("No se ha podido proicesar la linea:")
+                print("No se ha podido procesar la linea:")
                 print(linea)
                 print("==========")
         else:
-            #seccion con notas
-            prevChar = ""
-            for c in linea:
-                if isNum(c):
-                    if prevChar == "|":
-                        prevChar = c
-                        continue #Numero para marcar que compas tocar en una repeticion
-                    else:
-                        freq = notas[-1][0]
-                        notas[-1] = [freq, getNum(c)]
-                if c in notasExpI:
-                    i = notasExpI[c]
-                    freq = 440 * (2 ** (i / 12)) #440 * 2^(i/12)
-                    notas.append([freq,1])
-                prevChar = c
+            #seccion con notaS
+            while linea != "":
+                #Caso: Espacios en blanco
+                matchObj = re.match("^\s+", linea)
+                if matchObj != None:
+                    matchEndPos = matchObj.regs[0][1]
+                    linea = linea[matchEndPos:]
+                    continue
+                
+                #Caso: Empezar compas que empieza repeticion
+                matchObj = re.match("^\|:(1?)", linea)
+                if matchObj != None:
+                    matchEndPos = matchObj.regs[0][1]
+                    linea = linea[matchEndPos:]
+                    comienzoRep = len(notas)
+                    idxAnteriorCompas = len(notas)
+                    continue
 
+                #Caso: Empezar compas que termina repeticion
+                matchObj = re.match("^:\|(2?)", linea)
+                if matchObj != None:
+                    matchEndPos = matchObj.regs[0][1]
+                    linea = linea[matchEndPos:]
+                    notas.extend(notas[comienzoRep:idxAnteriorCompas])
+                    idxAnteriorCompas = len(notas)
+                    continue
+
+                #Caso: Empezar compas
+                matchObj = re.match("^\|(1?)", linea)
+                if matchObj != None:
+                    matchEndPos = matchObj.regs[0][1]
+                    linea = linea[matchEndPos:]
+                    idxAnteriorCompas = len(notas)
+                    continue
+                
+                #Caso: Fin de partitua
+                matchObj = re.match("^\]", linea)
+                if matchObj != None:
+                    matchEndPos = matchObj.regs[0][1]
+                    linea = linea[matchEndPos:]
+                    break
+
+                #Caso: Nota
+                matchObj = re.match("^(\d?)[A-G,a-g]('?)", linea)
+                if matchObj != None:
+                    matchEndPos = matchObj.regs[0][1]
+                    
+                    #Parte: modificacion duracion
+                    dur = abc.getDuracionDefaultParteIzq()
+                    matchObj = re.match("^\d", linea)
+                    if matchObj != None:
+                        matchEndPos = matchObj.regs[0][1]
+                        dur = getNum(linea[:matchEndPos])
+                        linea = linea[matchEndPos:]
+
+                    #Parte: letra nota y apostrofe opcional
+                    freq = 0
+                    matchObj = re.match("^[A-G,a-g]('?)", linea)
+                    if matchObj != None:
+                        çmatchEndPos = matchObj.regs[0][1]
+                        strNota = linea[:matchEndPos]
+                        freq = abc.getFreqParaNota(strNota)
+                        if freq == None:
+                            print("error: freq none")
+                            continue
+                        linea = linea[matchEndPos:]
+                    else:
+                        print("Error al parsear la nota")
+                        continue
+
+                    notas.append([freq, dur])
+                    continue
+
+                else:
+                    print("Error: ninguno de los casos ha sido reconocido")
     abc.setNotas(notas)
     return abc
-
-
-        
-    
-
-
-
-##[[220, 1][440, 2]], 100
 
 
 def main(abc):
