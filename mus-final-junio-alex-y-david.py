@@ -4,6 +4,51 @@ import soundfile as sf     # para lectura/escritura de wavs
 import kbhit
 import re
 
+
+
+class OsciladorSeno:
+    def __init__(self, bitRate, chunkSize, listaFreqsNotas=[], vol=1):
+        self.bitRate = bitRate # ~= SRATE
+        self.chunkSize = chunkSize
+        self.vol = vol
+
+        #Frecuencia por defecto
+        self.listaFreqsNotas = listaFreqsNotas
+
+        # Posición actual del bit a rellenar en el frame que vayamos a devolver (para saber si empezar a generar las ondas en fase 0 (si es el primer bit) o en otra fase si ya hemos generado chunks anteriores)
+        self.currPos = 0
+
+
+    def setListaFreqsNotas(self, listaFreqsNotas):
+        self.listaFreqsNotas = listaFreqsNotas
+    
+    def getListaFreqsNotas(self):
+        return self.listaFreqsNotas
+    
+    def addFreqNota(self, freqNota):
+        self.listaFreqsNotas.append(freqNota)
+  
+    def setVol(self, vol):
+        self.vol = vol
+
+    def getVol(self):
+        return self.vol
+
+    def getNextChunk(self):
+        currChunk = np.arange(self.chunkSize) + self.currPos
+        samples = np.zeros(self.chunkSize,dtype=np.float32) #TO DO: revisar porque se hace + currPos
+
+        for freq in self.listaFreqsNotas:
+            samples = np.sin(currChunk*2*np.pi*freq/self.bitRate) + samples
+    
+        self.currPos += self.chunkSize
+        return samples * self.vol
+
+        
+
+
+#-----------------
+
 class Fm:
     def __init__(self, bitRate, chunkSize, listaFreqs=[], vol=1):
         self.bitRate = bitRate # ~= SRATE
@@ -72,7 +117,7 @@ class Partitura:
         currNotas = []
         for nota in self.listaNotasConMomentos:
             if nota[1] <= self.currPos and nota[2] > self.currPos: #Para cada nota que se tenga que tocar en este chunk
-                currNotas.append([nota[0], 0.5]) #Añade su frecuencia
+                currNotas.append(nota[0]) #Añade su frecuencia
 
         self.currPos += self.chunkSize
         return currNotas
@@ -304,7 +349,8 @@ def main(abc):
     kb = kbhit.KBHit()
     c = ' '
 
-    myFm = Fm(SRATE, CHUNK, vol = 0.05)
+    #myFm = Fm(SRATE, CHUNK, vol = 0.05)
+    mySeno = OsciladorSeno(SRATE, CHUNK, vol = 0.05)
     myPartitura = Partitura(SRATE, CHUNK, abc.getNotas() , abc.getTiempoPorRedonda() * abc.getFracNotaPorDefecto() )
 
 
@@ -315,8 +361,8 @@ def main(abc):
     #frecs = [[fc,0.8],[fc+fm,0.5],[fc+2*fm,0.3],[fc+3*fm,0.2]]
 
     while True:
-        myFm.setListaFreqs(myPartitura.getNextChunk())
-        samples = myFm.getNextChunk()
+        mySeno.setListaFreqsNotas(myPartitura.getNextChunk())
+        samples = mySeno.getNextChunk()
         stream.write(np.float32(samples)) 
 
 
