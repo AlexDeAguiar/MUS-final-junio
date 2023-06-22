@@ -38,20 +38,27 @@ class Fm:
 
         for i in range(len(self.listaFreqs)-1,-1,-1):
             samples = self.listaFreqs[i][1] * np.sin(2*np.pi*self.listaFreqs[i][0]*currChunk/self.bitRate + samples)
+    
         
+        #Notas de la reunion
+        #Probar con un seno inicialmente
+
+
+
+
         #TODO: ver que pasa con esta linea
         #self.currPos += self.chunkSize
         return samples * self.vol
     
 class Partitura: 
-    def __init__(self, bitRate, chunkSize, listaNotas, bpm): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
+    def __init__(self, bitRate, chunkSize, listaNotas, tPorBeat): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
         self.bitRate = bitRate # ~= SRATE
         self.chunkSize = chunkSize
 
         
         self.currPos = 0
-        self.bpm = bpm
-        self.bitsPerBeat = self.bitRate/(self.bpm/60)
+        self.tPorBeat = tPorBeat
+        self.bitsPerBeat = self.bitRate * self.tPorBeat
 
         self.listaNotasConMomentos = []
 
@@ -85,6 +92,9 @@ class AbcInput:
         #Clave de Do:
         # RE MI FA SOL LA(220) SI DO RE MI FA SOL LA(440) SI
         # D  E  F  G   A       B  c  d  e  f  g   a       b
+
+        #Default speed
+        self.tPorRedonda = 15 #60bpm en negras
         return
 
     def setIndiceMelodia(self, X): #1, 2, 3...
@@ -104,6 +114,7 @@ class AbcInput:
         self.duracionDefaultStr = L
         self.duracionDefaultParteIzq = getNum(auxDuracionDefault[0])
         self.duracionDefaultDer = getNum(auxDuracionDefault[1])
+        self.fracNotaPorDefecto = self.duracionDefaultParteIzq / self.duracionDefaultDer
 
     def setTipoMelodia(self, R):
         self.tipoMelodia = R
@@ -117,9 +128,18 @@ class AbcInput:
     def getNotas(self):
         return self.notas
     
+    def setTiempoPorRedonda(self, tPorRedonda):
+        self.tPorRedonda = tPorRedonda
+
+    def getTiempoPorRedonda(self):
+        return self.tPorRedonda
+    
     def getDuracionDefaultParteIzq(self):
         return self.duracionDefaultParteIzq
     
+    def getFracNotaPorDefecto(self):
+        return self.fracNotaPorDefecto
+
     def getFreqParaNota(self, notaStr):
         if(self.key == "G"):
             if notaStr in self.notasExpSol:
@@ -152,6 +172,10 @@ def isNum(c):
 def getNum(c):
     return int(c)
 
+def getFraccion(fStr):
+    piezas = fStr.split("/")
+    return getNum(piezas[0]) / getNum(piezas[1])
+
 def leeArchivo(pathArchivo):
     file = open(pathArchivo, "r")
     archivoStr = file.read()
@@ -180,6 +204,12 @@ def leeArchivo(pathArchivo):
                 abc.setTipoMelodia(parteDer)
             elif (parteIzq == "K"):
                 abc.setKey(parteDer)
+            elif (parteIzq == "Q"):
+                tmp = parteDer.split("=")
+                tmpIzq = tmp[0]  #1/4, 1/8, 3/8,... 1 = redonda, 1/2 = blanca, 1/4 = negra,...   (modificadorDeNota * L/(Qizq*Qder)   t      (L/(Qder *Qizq)    2* 1/120
+                tmpDer = tmp[1]  #120, 60, 50,...
+                tPorRedonda = 60/(getFraccion(tmpIzq) * getNum(tmpDer))
+                abc.setTiempoPorRedonda(tPorRedonda)
             else:
                 print("---ERROR---"),
                 print("No se ha podido procesar la linea:")
@@ -245,7 +275,7 @@ def leeArchivo(pathArchivo):
                     freq = 0
                     matchObj = re.match("^[A-G,a-g]('?)", linea)
                     if matchObj != None:
-                        çmatchEndPos = matchObj.regs[0][1]
+                        matchEndPos = matchObj.regs[0][1]
                         strNota = linea[:matchEndPos]
                         freq = abc.getFreqParaNota(strNota)
                         if freq == None:
@@ -267,7 +297,7 @@ def leeArchivo(pathArchivo):
 
 def main(abc):
     SRATE = 44100       # sampling rate, Hz, must be integer
-    CHUNK = 128
+    CHUNK = 4410
     stream = sd.OutputStream(samplerate=SRATE,blocksize=CHUNK,channels=1)  
     stream.start()
 
@@ -275,7 +305,7 @@ def main(abc):
     c = ' '
 
     myFm = Fm(SRATE, CHUNK, vol = 0.05)
-    myPartitura = Partitura(SRATE, CHUNK, abc.getNotas() , 60)
+    myPartitura = Partitura(SRATE, CHUNK, abc.getNotas() , abc.getTiempoPorRedonda() * abc.getFracNotaPorDefecto() )
 
 
     # [(fc,vol),(fm1,beta1),(fm2,beta2),...]

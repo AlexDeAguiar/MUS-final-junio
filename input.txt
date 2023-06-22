@@ -3,6 +3,7 @@ M:6/8
 L:1/8
 R:jig
 K:G
+Q:1/8=120
 GFG BAB | gfg gab | GFG BAB | d2A AFD |
 GFG BAB | gfg gab | age edB |1 dBA AFD :|2 dBA ABd |:
 efe edB | dBA ABd | efe edB | gdB ABd |
