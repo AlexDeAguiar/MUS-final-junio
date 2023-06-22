@@ -16,7 +16,7 @@ class OsciladorSeno:
         self.listaFreqsNotas = listaFreqsNotas
 
         # Posición actual del bit a rellenar en el frame que vayamos a devolver (para saber si empezar a generar las ondas en fase 0 (si es el primer bit) o en otra fase si ya hemos generado chunks anteriores)
-        self.currPos = 0
+        self.fase = 0
 
 
     def setListaFreqsNotas(self, listaFreqsNotas):
@@ -35,13 +35,18 @@ class OsciladorSeno:
         return self.vol
 
     def getNextChunk(self):
-        currChunk = np.arange(self.chunkSize) + self.currPos
+        currChunk = np.arange(self.chunkSize)
         samples = np.zeros(self.chunkSize,dtype=np.float32) #TO DO: revisar porque se hace + currPos
 
-        for freq in self.listaFreqsNotas:
-            samples = np.sin(currChunk*2*np.pi*freq/self.bitRate) + samples
+        freq = self.listaFreqsNotas[0]
+        samples = np.sin(currChunk*2*np.pi*freq/self.bitRate  + self.fase )
     
-        self.currPos += self.chunkSize
+        numOndas = freq*self.chunkSize/self.bitRate
+        faseOndas = self.fase /(2*np.pi)
+        faseOndas += numOndas
+        faseOndas -= np.trunc(faseOndas)
+        self.fase = faseOndas * 2*np.pi
+        
         return samples * self.vol
 
         
