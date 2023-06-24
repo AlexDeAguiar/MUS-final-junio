@@ -49,9 +49,6 @@ class OsciladorSeno:
         
         return samples * self.vol
 
-        
-
-
 #-----------------
 
 class Fm:
@@ -89,12 +86,6 @@ class Fm:
         for i in range(len(self.listaFreqs)-1,-1,-1):
             samples = self.listaFreqs[i][1] * np.sin(2*np.pi*self.listaFreqs[i][0]*currChunk/self.bitRate + samples)
     
-        
-        #Notas de la reunion
-        #Probar con un seno inicialmente
-
-
-
 
         #TODO: ver que pasa con esta linea
         #self.currPos += self.chunkSize
