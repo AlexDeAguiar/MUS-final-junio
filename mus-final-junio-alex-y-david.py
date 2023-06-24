@@ -4,8 +4,6 @@ import soundfile as sf     # para lectura/escritura de wavs
 import kbhit
 import re
 
-
-
 class OsciladorSeno:
     def __init__(self, bitRate, chunkSize, listaFreqsNotas=[], vol=1):
         self.bitRate = bitRate # ~= SRATE
@@ -52,26 +50,28 @@ class OsciladorSeno:
 #-----------------
 
 class Fm:
-    def __init__(self, bitRate, chunkSize, listaFreqs=[], vol=1):
+    def __init__(self, bitRate, chunkSize, listaFreqsNotas=[], vol=1):
         self.bitRate = bitRate # ~= SRATE
         self.chunkSize = chunkSize
         self.vol = vol
 
         #Frecuencia por defecto
-        self.listaFreqs = listaFreqs
+        self.listaFreqsNotas = listaFreqsNotas
+        self.beta = 1
+        self.fm = 300
 
         # Posición actual del bit a rellenar en el frame que vayamos a devolver (para saber si empezar a generar las ondas en fase 0 (si es el primer bit) o en otra fase si ya hemos generado chunks anteriores)
         self.currPos = 0
 
 
-    def setListaFreqs(self, listaFreqs):
-        self.listaFreqs = listaFreqs
+    def setListaFreqsNotas(self, listaFreqsNotas):
+        self.listaFreqsNotas = listaFreqsNotas
     
-    def getListaFreqs(self):
-        return self.listaFreqs
+    def getListaFreqsNotas(self):
+        return self.listaFreqsNotas
     
-    def addFreq(self, freq):
-        self.listaFreqs.append(freq)
+    def addFreqNota(self, freqNota):
+        self.listaFreqsNotas.append(freqNota)
   
     def setVol(self, vol):
         self.vol = vol
@@ -81,15 +81,14 @@ class Fm:
 
     def getNextChunk(self):
         currChunk = np.arange(self.chunkSize) + self.currPos
-        samples = np.zeros(self.chunkSize,dtype=np.float32) + self.currPos #TO DO: revisar porque se hace + currPos
 
-        for i in range(len(self.listaFreqs)-1,-1,-1):
-            samples = self.listaFreqs[i][1] * np.sin(2*np.pi*self.listaFreqs[i][0]*currChunk/self.bitRate + samples)
+        fc = self.listaFreqsNotas[0]
+        mod = (self.bitRate*self.beta) * np.sin(2*np.pi*self.fm*currChunk/self.bitRate)
+        res = np.sin((2*np.pi*fc*currChunk+ mod)/self.bitRate)
     
+        self.currPos += self.chunkSize
+        return res * self.vol
 
-        #TODO: ver que pasa con esta linea
-        #self.currPos += self.chunkSize
-        return samples * self.vol
     
 class Partitura: 
     def __init__(self, bitRate, chunkSize, listaNotas, tPorBeat): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
@@ -346,7 +345,7 @@ def main(abc):
     c = ' '
 
     #myFm = Fm(SRATE, CHUNK, vol = 0.05)
-    mySeno = OsciladorSeno(SRATE, CHUNK, vol = 0.05)
+    mySeno = Fm(SRATE, CHUNK, vol = 0.05)
     myPartitura = Partitura(SRATE, CHUNK, abc.getNotas() , abc.getTiempoPorRedonda() * abc.getFracNotaPorDefecto() )
 
 
