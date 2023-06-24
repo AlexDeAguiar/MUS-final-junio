@@ -83,6 +83,7 @@ class Fm:
         currChunk = np.arange(self.chunkSize) + self.currPos
 
         fc = self.listaFreqsNotas[0]
+        self.fm = fc*2 #THIS IS ONLY FOR TESTING
         mod = (self.bitRate*self.beta) * np.sin(2*np.pi*self.fm*currChunk/self.bitRate)
         res = np.sin((2*np.pi*fc*currChunk+ mod)/self.bitRate)
     
