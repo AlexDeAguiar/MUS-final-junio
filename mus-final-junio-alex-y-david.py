@@ -50,7 +50,7 @@ class OsciladorSeno:
 #-----------------
 
 class Fm:
-    def __init__(self, bitRate, chunkSize, listaFreqsNotas=[], vol=1):
+    def __init__(self, bitRate, chunkSize, factorMod = 1, listaFreqsNotas=[], vol=1):
         self.bitRate = bitRate # ~= SRATE
         self.chunkSize = chunkSize
         self.vol = vol
@@ -58,7 +58,9 @@ class Fm:
         #Frecuencia por defecto
         self.listaFreqsNotas = listaFreqsNotas
         self.beta = 1
-        self.fm = 300
+        self.factorMod = factorMod
+        self.faseMod = 0
+        self.faseRes = 0
 
         # Posición actual del bit a rellenar en el frame que vayamos a devolver (para saber si empezar a generar las ondas en fase 0 (si es el primer bit) o en otra fase si ya hemos generado chunks anteriores)
         self.currPos = 0
@@ -80,13 +82,26 @@ class Fm:
         return self.vol
 
     def getNextChunk(self):
-        currChunk = np.arange(self.chunkSize) + self.currPos
+        currChunk = np.arange(self.chunkSize)
 
         fc = self.listaFreqsNotas[0]
-        self.fm = fc*2 #THIS IS ONLY FOR TESTING
-        mod = (self.bitRate*self.beta) * np.sin(2*np.pi*self.fm*currChunk/self.bitRate)
-        res = np.sin((2*np.pi*fc*currChunk+ mod)/self.bitRate)
+        self.fm = fc*self.factorMod
+        mod = (self.bitRate*self.beta) * np.sin(2*np.pi*self.fm*currChunk/self.bitRate + self.faseMod)
+        res = np.sin((2*np.pi*fc*currChunk+ mod)/self.bitRate   + self.faseRes)
     
+        numOndasMod = self.fm*self.chunkSize/self.bitRate
+        faseOndasMod = self.faseMod /(2*np.pi)
+        faseOndasMod += numOndasMod
+        faseOndasMod -= np.trunc(faseOndasMod)
+        self.faseMod = faseOndasMod * 2*np.pi
+
+        numOndasRes = fc*self.chunkSize/self.bitRate
+        faseOndasRes = self.faseRes /(2*np.pi)
+        faseOndasRes += numOndasRes
+        faseOndasRes -= np.trunc(faseOndasRes)
+        self.faseRes = faseOndasRes * 2*np.pi
+
+
         self.currPos += self.chunkSize
         return res * self.vol
 
@@ -338,15 +353,15 @@ def leeArchivo(pathArchivo):
 
 def main(abc):
     SRATE = 44100       # sampling rate, Hz, must be integer
-    CHUNK = 4410
+    CHUNK = 441
     stream = sd.OutputStream(samplerate=SRATE,blocksize=CHUNK,channels=1)  
     stream.start()
 
     kb = kbhit.KBHit()
     c = ' '
 
-    #myFm = Fm(SRATE, CHUNK, vol = 0.05)
-    mySeno = Fm(SRATE, CHUNK, vol = 0.05)
+    myModulador = Fm(SRATE, CHUNK, factorMod=2, vol = 0.05)
+    #myModulador = OsciladorSeno(SRATE, CHUNK, vol = 0.05)
     myPartitura = Partitura(SRATE, CHUNK, abc.getNotas() , abc.getTiempoPorRedonda() * abc.getFracNotaPorDefecto() )
 
 
@@ -357,8 +372,8 @@ def main(abc):
     #frecs = [[fc,0.8],[fc+fm,0.5],[fc+2*fm,0.3],[fc+3*fm,0.2]]
 
     while True:
-        mySeno.setListaFreqsNotas(myPartitura.getNextChunk())
-        samples = mySeno.getNextChunk()
+        myModulador.setListaFreqsNotas(myPartitura.getNextChunk())
+        samples = myModulador.getNextChunk()
         stream.write(np.float32(samples)) 
 
 
