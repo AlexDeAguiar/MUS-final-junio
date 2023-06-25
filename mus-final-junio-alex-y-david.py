@@ -151,7 +151,7 @@ class FmCompuesto:
             faseMod = self.listaFaseMod[factorBetaI]
             freqMod = self.listaFactorYBeta[factorBetaI][0] * fc
             betaMod = self.listaFactorYBeta[factorBetaI][1]
-            mod = betaMod * np.sin(2*np.pi*freqMod*currChunk/self.bitRate + faseMod)
+            mod = (self.bitRate*betaMod) * np.sin(2*np.pi*freqMod*currChunk/self.bitRate + faseMod)
             listaMod.append(mod)
 
             numOndasMod = freqMod*self.chunkSize/self.bitRate
