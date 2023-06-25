@@ -47,9 +47,9 @@ class OsciladorSeno:
         
         return samples * self.vol
 
-#-----------------
+#---------------------------------------------------------------------------------------------------------------------------------
 
-class Fm:
+class FmSimple:
     def __init__(self, bitRate, chunkSize, factorMod = 1, listaFreqsNotas=[], vol=1):
         self.bitRate = bitRate # ~= SRATE
         self.chunkSize = chunkSize
@@ -105,6 +105,81 @@ class Fm:
         self.currPos += self.chunkSize
         return res * self.vol
 
+#---------------------------------------------------------------------------------------------------------------------------------
+
+class FmCompuesto:
+    def __init__(self, bitRate, chunkSize, listaFactorYBeta=[], listaFreqsNotas=[], vol=1):
+        self.bitRate = bitRate # ~= SRATE
+        self.chunkSize = chunkSize
+        self.vol = vol
+
+        #Frecuencia por defecto
+        self.listaFreqsNotas = listaFreqsNotas
+        self.setListaFactorYBeta(listaFactorYBeta)
+        self.faseRes = 0
+
+        # Posición actual del bit a rellenar en el frame que vayamos a devolver (para saber si empezar a generar las ondas en fase 0 (si es el primer bit) o en otra fase si ya hemos generado chunks anteriores)
+        self.currPos = 0
+
+    def setListaFactorYBeta(self, listaFactorYBeta):
+        self.listaFactorYBeta = listaFactorYBeta
+        self.listaFaseMod = []
+        for i in range(len(self.listaFactorYBeta)):
+            self.listaFaseMod.append(0)
+
+    def setListaFreqsNotas(self, listaFreqsNotas):
+        self.listaFreqsNotas = listaFreqsNotas
+    
+    def getListaFreqsNotas(self):
+        return self.listaFreqsNotas
+    
+    def addFreqNota(self, freqNota):
+        self.listaFreqsNotas.append(freqNota)
+  
+    def setVol(self, vol):
+        self.vol = vol
+
+    def getVol(self):
+        return self.vol
+
+    def getNextChunk(self):
+        currChunk = np.arange(self.chunkSize)
+        fc = self.listaFreqsNotas[0]
+
+        listaMod = []
+        for factorBetaI in range(len(self.listaFactorYBeta)):
+            faseMod = self.listaFaseMod[factorBetaI]
+            freqMod = self.listaFactorYBeta[factorBetaI][0] * fc
+            betaMod = self.listaFactorYBeta[factorBetaI][1]
+            mod = betaMod * np.sin(2*np.pi*freqMod*currChunk/self.bitRate + faseMod)
+            listaMod.append(mod)
+
+            numOndasMod = freqMod*self.chunkSize/self.bitRate
+            faseOndasMod = faseMod /(2*np.pi)
+            faseOndasMod += numOndasMod
+            faseOndasMod -= np.trunc(faseOndasMod)
+            faseMod = faseOndasMod * 2*np.pi
+            self.listaFaseMod[factorBetaI] = faseMod
+
+        totMod = listaMod[-1]
+        for i in range(0, len(listaMod)-1, -1):
+            totMod += listaMod[i]
+
+        res = np.sin((2*np.pi*fc*currChunk+ totMod)/self.bitRate + self.faseRes)  #TODO cambiar listaMod[0] a un for para aplicar multiples moduladores
+    
+
+        # output = betaActual * sin(2pi * freqMod * currChunk / bitRate    + output)
+
+
+
+        numOndasRes = fc*self.chunkSize/self.bitRate
+        faseOndasRes = self.faseRes /(2*np.pi)
+        faseOndasRes += numOndasRes
+        faseOndasRes -= np.trunc(faseOndasRes)
+        self.faseRes = faseOndasRes * 2*np.pi
+
+        self.currPos += self.chunkSize
+        return res * self.vol
     
 class Partitura: 
     def __init__(self, bitRate, chunkSize, listaNotas, tPorBeat): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
@@ -360,16 +435,33 @@ def main(abc):
     kb = kbhit.KBHit()
     c = ' '
 
-    myModulador = Fm(SRATE, CHUNK, factorMod=2, vol = 0.05)
+    #Elegir instrumento
+    print("Elige instrumento concreto pulsando una tecla: \n")
+    print("p - piano;  f - flauta dulce;  s - saxofon\n")
+    while True:
+        if kb.kbhit():
+            c = kb.getch()
+            if c == 'p':
+                print("Has seleccionado el piano.\n")                  #0.374
+                listaFactoresYBeta = [[1/2, 1.0],[3/4, 0.8],[1/4, 0.5],[187/500,0.1]]
+                break
+            if c == 'f':
+                print("Has seleccionado la flauta dulce.\n")
+                listaFactoresYBeta = [[1/2,0.8],[3/4,0.5],[1/4,0.3],[187/1000, 0.1]]
+                break
+            if c == 's':
+                print("Has seleccionado el saxofon.\n")
+                listaFactoresYBeta = [[1/2, 1.0],[3/4, 0.8],[5/4, 0.6],[3/2, 0.4]]
+                break
+
+
+    myModulador = FmCompuesto(SRATE, CHUNK, listaFactorYBeta=listaFactoresYBeta, vol = 0.5)
     #myModulador = OsciladorSeno(SRATE, CHUNK, vol = 0.05)
     myPartitura = Partitura(SRATE, CHUNK, abc.getNotas() , abc.getTiempoPorRedonda() * abc.getFracNotaPorDefecto() )
 
 
-    # [(fc,vol),(fm1,beta1),(fm2,beta2),...]
-    #frecs = [[220,0.8],[220,0.5],[110,0.3]]
-
-    #fc, fm = 220, 220
-    #frecs = [[fc,0.8],[fc+fm,0.5],[fc+2*fm,0.3],[fc+3*fm,0.2]]
+    # [[factorModulador1,beta1],[factorModulador2,beta2]],...]
+    #factoresYBetas = [[1/2,1],[3/4,0.8],...]
 
     while True:
         myModulador.setListaFreqsNotas(myPartitura.getNextChunk())
