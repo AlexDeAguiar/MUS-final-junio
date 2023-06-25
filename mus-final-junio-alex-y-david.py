@@ -142,6 +142,7 @@ class FmCompuesto:
     def getVol(self):
         return self.vol
 
+    #Esta asume sin(2pi*fc + Beta1*sin(2pi*fm1) + Beta2*sin(2pi*fm2) + Beta3*sin(2pi*fm3))
     def getNextChunk(self):
         currChunk = np.arange(self.chunkSize)
         fc = self.listaFreqsNotas[0]
@@ -170,8 +171,6 @@ class FmCompuesto:
 
         # output = betaActual * sin(2pi * freqMod * currChunk / bitRate    + output)
 
-
-
         numOndasRes = fc*self.chunkSize/self.bitRate
         faseOndasRes = self.faseRes /(2*np.pi)
         faseOndasRes += numOndasRes
@@ -181,6 +180,28 @@ class FmCompuesto:
         self.currPos += self.chunkSize
         return res * self.vol
     
+    #Sacado de las diapositivas de FM extendida
+    def getNextChunk2(self):
+        currChunk = np.arange(self.chunkSize) + self.currPos
+        samples = np.zeros(self.chunkSize) + self.currPos
+
+        fc = self.listaFreqsNotas[0]
+
+
+        listaFcYFm = [[fc, self.vol]]
+        for factorYBeta in self.listaFactorYBeta:
+            listaFcYFm.append(factorYBeta)
+
+        for i in range (len(listaFcYFm)-1, -1, -1):
+            samples = listaFcYFm[i][1] * np.sin(2*np.pi*listaFcYFm[i][0]*currChunk/self.bitRate + samples)
+
+        self.currPos += self.chunkSize
+        return samples
+
+
+
+
+
 class Partitura: 
     def __init__(self, bitRate, chunkSize, listaNotas, tPorBeat): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
         self.bitRate = bitRate # ~= SRATE
@@ -428,7 +449,7 @@ def leeArchivo(pathArchivo):
 
 def main(abc):
     SRATE = 44100       # sampling rate, Hz, must be integer
-    CHUNK = 441
+    CHUNK = 22050
     stream = sd.OutputStream(samplerate=SRATE,blocksize=CHUNK,channels=1)  
     stream.start()
 
@@ -465,7 +486,7 @@ def main(abc):
 
     while True:
         myModulador.setListaFreqsNotas(myPartitura.getNextChunk())
-        samples = myModulador.getNextChunk()
+        samples = myModulador.getNextChunk2()
         stream.write(np.float32(samples)) 
 
 
