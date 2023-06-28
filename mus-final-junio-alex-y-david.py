@@ -263,21 +263,27 @@ class AbcInput:
 
     def getFreqParaNota(self, notaStr):
         if(self.key == "G"):
-            if notaStr in self.notasExpSol:
+            if notaStr == "z":
+                return 0 #Silencios
+            elif notaStr in self.notasExpSol:
                 i = self.notasExpSol[notaStr]
                 return 440 * (2 ** (i / 12)) #440 * 2^(i/12)
             else:
                 print("error, nota no reconocida en esta escala")
                 return None
         elif(self.key == "F"):
-            if notaStr in self.notasExpFa:
+            if notaStr == "z":
+                return 0 #Silencios
+            elif notaStr in self.notasExpFa:
                 i = self.notasExpFa[notaStr]
                 return 440 * (2 ** (i / 12)) #440 * 2^(i/12)
             else:
                 print("error, nota no reconocida en esta escala")
                 return None
         elif(self.key == "C"):
-            if notaStr in self.notasExpDo:
+            if notaStr == "z":
+                return 0 #Silencios
+            elif notaStr in self.notasExpDo:
                 i = self.notasExpDo[notaStr]
                 return 440 * (2 ** (i / 12)) #440 * 2^(i/12)
             else:
@@ -380,7 +386,7 @@ def leeArchivo(pathArchivo):
                     break
 
                 #Caso: Nota
-                matchObj = re.match("^(\d?)[A-G,a-g]('?)", linea)
+                matchObj = re.match("^(\d?)[A-G,a-g,z]('?)", linea)
                 if matchObj != None:
                     matchEndPos = matchObj.regs[0][1]
                     
@@ -394,7 +400,7 @@ def leeArchivo(pathArchivo):
 
                     #Parte: letra nota y apostrofe opcional
                     freq = 0
-                    matchObj = re.match("^[A-G,a-g]('?)", linea)
+                    matchObj = re.match("^[A-G,a-g,z]('?)", linea)
                     if matchObj != None:
                         matchEndPos = matchObj.regs[0][1]
                         strNota = linea[:matchEndPos]
