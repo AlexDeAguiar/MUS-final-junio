@@ -1,0 +1,10 @@
+T:Pirates of the Caribbean
+M:4/4
+L:1/8
+R:ost
+K:G
+Q:1/8=120
+EG2A 2A AB | 2c 2c cd 2B | 2B AGGA 2z | EG 2A 2A AB |
+2c 2c cd2B | 2B AG 2A 2z | EG 2A 2A Ac | 2d 2d de2f | 2f edeA 2z |
+AB 2c 2c 2d | eA 2z Ac 2B | 2B cA 2B 2z | EG 2A 2A AB |
+2c 2c cd2B | 2B AGGA 2z |]

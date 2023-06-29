@@ -494,6 +494,6 @@ def main(abc):
 
 #Ejecutar el programa:------------------------------------
 if __name__ == "__main__":
-    abc = leeArchivo("input.txt")
+    abc = leeArchivo("input2.txt")
     main(abc)
 
