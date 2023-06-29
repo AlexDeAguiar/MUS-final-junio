@@ -1,6 +1,5 @@
 import numpy as np
 import sounddevice as sd   # modulo de conexión con portAudio
-import soundfile as sf     # para lectura/escritura de wavs
 import kbhit
 import re
 
@@ -486,7 +485,7 @@ def main(abc):
         if kb.kbhit():
             c = kb.getch()
             if c =='q':
-                print("Has pulsado q, reprocuccion parada")
+                print("Has pulsado q, reproduccion parada")
                 break
         
 
