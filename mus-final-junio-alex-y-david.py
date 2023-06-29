@@ -45,9 +45,7 @@ class OsciladorSeno:
         faseOndas -= np.trunc(faseOndas)
         self.fase = faseOndas * 2*np.pi
         
-        volRamp = (((currChunk * -1) + (self.chunkSize)) / self.chunkSize) * self.vol
-
-        return samples * volRamp
+        return samples * self.vol
 
 #---------------------------------------------------------------------------------------------------------------------------------
 
@@ -422,7 +420,7 @@ def leeArchivo(pathArchivo):
 
 def main(abc):
     SRATE = 44100       # sampling rate, Hz, must be integer
-    CHUNK = 22050
+    CHUNK = 1024
     stream = sd.OutputStream(samplerate=SRATE,blocksize=CHUNK,channels=1)  
     stream.start()
 
