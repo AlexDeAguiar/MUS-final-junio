@@ -456,7 +456,7 @@ def main(abc):
                             print("Has seleccionado la flauta dulce.\n")
                             listaFactoresYBeta = [[1/2,0.8],[3/4,0.5],[1/4,0.3],[187/1000, 0.1]]
                             break
-                        if c == 'x':
+                        if c == 's':
                             print("Has seleccionado el saxofon.\n")
                             listaFactoresYBeta = [[1/2, 1.0],[3/4, 0.8],[5/4, 0.6],[3/2, 0.4]]
                             break
@@ -492,7 +492,7 @@ def main(abc):
 #Ejecutar el programa:------------------------------------
 if __name__ == "__main__":
     print("-----------------------------------------------------------------------------------------")
-    print("Escribe a countinuacion el nombre del fichero con la partitura ABC (ejemplo: input2.txt).")
+    print("Escribe a countinuacion el nombre del fichero con la partitura ABC (ejemplo: piratas.txt).")
     print("Notas:")
     print("  - El path es relativo a donde se encuentre este fichero")
     print("  - Intente usar uno de los inputs de ejemplo o modificar uno de ellos con cuidado,")
