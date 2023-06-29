@@ -474,11 +474,12 @@ def main(abc):
     #factoresYBetas = [[1/2,1],[3/4,0.8],...]
 
     
-
-    while True:
-        myModulador.setListaFreqsNotas(myPartitura.getNextChunk())
+    nextChunk = myPartitura.getNextChunk()
+    while len(nextChunk) > 0:
+        myModulador.setListaFreqsNotas(nextChunk)
         samples = myModulador.getNextChunk()
-        stream.write(np.float32(samples)) 
+        stream.write(np.float32(samples))
+        nextChunk = myPartitura.getNextChunk() 
 
 
         if kb.kbhit():
