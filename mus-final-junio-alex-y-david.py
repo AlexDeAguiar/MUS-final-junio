@@ -473,7 +473,8 @@ def main(abc):
     # [[factorModulador1,beta1],[factorModulador2,beta2]],...]
     #factoresYBetas = [[1/2,1],[3/4,0.8],...]
 
-    
+    print("Reproduciendo, puedes pulsar q para pararlo")
+
     nextChunk = myPartitura.getNextChunk()
     while len(nextChunk) > 0:
         myModulador.setListaFreqsNotas(nextChunk)
@@ -484,7 +485,9 @@ def main(abc):
 
         if kb.kbhit():
             c = kb.getch()
-            if c =='q': break
+            if c =='q':
+                print("Has pulsado q, reprocuccion parada")
+                break
         
 
     stream.stop()
