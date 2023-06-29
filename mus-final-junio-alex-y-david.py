@@ -162,14 +162,8 @@ class FmCompuesto:
             faseOndasMod -= np.trunc(faseOndasMod)
             self.listaFaseMod[i] = faseOndasMod * 2*np.pi
 
-
-
         self.currPos += self.chunkSize
         return samples
-
-
-
-
 
 class Partitura: 
     def __init__(self, bitRate, chunkSize, listaNotas, tPorBeat): #sintaxis lista: [[freq, dur]] dur = 1 es una negra, dur = 2 es una blanca, dur = 0.5 es una corchea...
@@ -185,7 +179,9 @@ class Partitura:
 
         ini = 0
         for nota in listaNotas:
-            self.listaNotasConMomentos.append([nota[0], ini, ini + nota[1] * self.bitsPerBeat]) #nota[0] -> freq, nota[1] -> duracion en negras
+            mid = ini + (nota[1] * 0.95) * self.bitsPerBeat
+            self.listaNotasConMomentos.append([nota[0], ini, mid]) #Duracion de la nota (ligeramente reducida)
+            self.listaNotasConMomentos.append([0, mid , mid + (nota[1] * 0.05) * self.bitsPerBeat]) #Mini silencio entre nota y nota (para que se note la diferencia entre 2 notas consecutivas iguales)
             ini += nota[1] * self.bitsPerBeat
 
 
@@ -494,6 +490,15 @@ def main(abc):
 
 #Ejecutar el programa:------------------------------------
 if __name__ == "__main__":
-    abc = leeArchivo("input2.txt")
+    print("-----------------------------------------------------------------------------------------")
+    print("Escribe a countinuacion el nombre del fichero con la partitura ABC (ejemplo: input2.txt).")
+    print("Notas:")
+    print("  - El path es relativo a donde se encuentre este fichero")
+    print("  - Intente usar uno de los inputs de ejemplo o modificar uno de ellos con cuidado,")
+    print("    porque el parser no reconoce todos los ABC, y headers no reconocidos o espacios")
+    print("    de sobra pueden dar errores al parsearlo")
+    print("-----------------------------------------------------------------------------------------")
+    archivo = input()
+    abc = leeArchivo(archivo)
     main(abc)
 
