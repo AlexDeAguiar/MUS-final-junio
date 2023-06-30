@@ -1,6 +1,5 @@
 import numpy as np
 import sounddevice as sd   # modulo de conexión con portAudio
-import soundfile as sf     # para lectura/escritura de wavs
 import kbhit
 import re
 
@@ -456,7 +455,7 @@ def main(abc):
                             print("Has seleccionado la flauta dulce.\n")
                             listaFactoresYBeta = [[1/2,0.8],[3/4,0.5],[1/4,0.3],[187/1000, 0.1]]
                             break
-                        if c == 'x':
+                        if c == 's':
                             print("Has seleccionado el saxofon.\n")
                             listaFactoresYBeta = [[1/2, 1.0],[3/4, 0.8],[5/4, 0.6],[3/2, 0.4]]
                             break
@@ -473,7 +472,8 @@ def main(abc):
     # [[factorModulador1,beta1],[factorModulador2,beta2]],...]
     #factoresYBetas = [[1/2,1],[3/4,0.8],...]
 
-    
+    print("Reproduciendo, puedes pulsar q para pararlo")
+
     nextChunk = myPartitura.getNextChunk()
     while len(nextChunk) > 0:
         myModulador.setListaFreqsNotas(nextChunk)
@@ -484,7 +484,9 @@ def main(abc):
 
         if kb.kbhit():
             c = kb.getch()
-            if c =='q': break
+            if c =='q':
+                print("Has pulsado q, reproduccion parada")
+                break
         
 
     stream.stop()
@@ -492,7 +494,7 @@ def main(abc):
 #Ejecutar el programa:------------------------------------
 if __name__ == "__main__":
     print("-----------------------------------------------------------------------------------------")
-    print("Escribe a countinuacion el nombre del fichero con la partitura ABC (ejemplo: input2.txt).")
+    print("Escribe a countinuacion el nombre del fichero con la partitura ABC (ejemplo: piratas.txt).")
     print("Notas:")
     print("  - El path es relativo a donde se encuentre este fichero")
     print("  - Intente usar uno de los inputs de ejemplo o modificar uno de ellos con cuidado,")
